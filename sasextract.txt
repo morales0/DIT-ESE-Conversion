@@ -1,0 +1,116 @@
+//FIN0470D JOB (110090),'FIN AID (SAM)',                                        
+//             CLASS=F,                                                         
+//             MSGCLASS=N,                                                      
+//             MSGLEVEL=(1,1),                                                  
+//             USER=SAM$                                                        
+-INC $SAMLOAD                                                                  %
+//*                                                                             
+//**********************************************************************        
+//* CREATE A DATA FILE FROM  ORACLE SQL USING SQLPLUS.                 *        
+//* THE COMPLICATED SETUP IS BECAUSE THE SET ECHO OFF CAN NOT          *        
+//* BE ENTERED FROM SYSIN                                              *        
+//**********************************************************************        
+//*----------------------------------------------------------------*            
+//*  JOB DESCRIPTION: DEVELOPMENT SQLPLUS                          *            
+//*----------------------------------------------------------------*            
+//*                                                                             
+//*TEP100  EXEC ORASQLD2,PARM='++//DD:LOGON'                                    
+//STEP100  EXEC ORASQLP2,PARM='++//DD:LOGON'                                    
+//SQLRUN   DD *                                                                 
+START //DD:SQLENV                                                               
+SPOOL //DD:SPOOLED                                                              
+START //DD:SQLQRY                                                               
+SPOOL OFF                                                                       
+//SQLENV   DD *                                                                 
+WHENEVER SQLERROR EXIT SQL.SQLCODE                                              
+SET ECHO OFF                                                                    
+SET TERMOUT OFF                                                                 
+SET FEEDBACK OFF                                                                
+SET WRAP OFF                                                                    
+SET PAGESIZE 0                                                                  
+SET LINESIZE 700                                                                
+SET HEADING OFF                                                                 
+//SQLQRY   DD *                                                                 
+LOCK TABLE SFA.SFA_STU_AWRD_REQ IN EXCLUSIVE MODE NOWAIT;                       
+                                                                                
+SELECT A.AIDYR,                                                                 
+       A.U_ID,                                                                  
+       A.AIDID,                                                                 
+       TO_CHAR(A.INSRT_DT,'YYYYMMDDHH24MISS'),                                  
+       A.INSRT_U_ID,                                                            
+       A.AWRD_AMT,                                                              
+       A.SCHTYPE_CD,                                                            
+       A.CEREMONIAL_CHECK_IND,                                                  
+       A.TUITION_REMISSION_CD,                                                  
+       A.STAT_CD,                                                               
+       A.INTERNATIONAL_IND,                                                     
+       TO_CHAR(A.SAM_POST_DT,'YYYYMMDD'),                                       
+       A.SAM_POSTED_IND,                                                        
+       TO_CHAR(A.POST_DT,'YYYYMMDD'),                                           
+       TO_CHAR(SYSDATE,'YYYYMMDD'),                                             
+       TO_CHAR(SYSDATE,'HHMISS'),                                               
+       A.REQ_TEXT,                                                              
+       'FIN0470X'                                                               
+FROM SFA.SFA_STU_AWRD_REQ A                                                     
+WHERE A.SAM_POSTED_IND IS NULL;                                                 
+                                                                                
+UPDATE SFA.SFA_STU_AWRD_REQ A                                                   
+SET A.SAM_POSTED_IND = 'Y',                                                     
+    A.SAM_POST_DT = SYSDATE                                                     
+WHERE A.SAM_POSTED_IND IS NULL;                                                 
+                                                                                
+COMMIT;                                                                         
+//SQLLOGIN DD DUMMY                                                             
+//*POOLED  DD SYSOUT=*                                                          
+//SPOOLED  DD DSN=&&DATAREC,                                                    
+//            UNIT=TEMP,                                                        
+//            DCB=(LRECL=700,BLKSIZE=0,RECFM=FB),                               
+//            SPACE=(TRK,(10,10),RLSE),                                         
+//            DISP=(NEW,PASS,DELETE)                                            
+//LOGON    DD *                                                                 
+-INC $SFA$ORA                                                                  %
+/*                                                                              
+//SYSIN    DD *                                                                 
+START //DD:SQLRUN                                                               
+EXIT                                                                            
+/*                                                                              
+//*                                                                             
+//**********************************************************************        
+//* COPY FILE FOR PROSAM INTERFACE                                     *        
+//**********************************************************************        
+//JS020   EXEC PGM=IEBGENER                                                     
+//*******  TO THIS FILE...                                                      
+//SYSUT2   DD  DSN=SAMP.DATA.AWRDUPS.PROSAM(+0),                                
+//             DISP=MOD                                                         
+//****** FROM THIS FILE...                                                      
+//SYSUT1   DD  DSN=&&DATAREC,                                                   
+//             UNIT=TEMP,                                                       
+//             DISP=(OLD,PASS)                                                  
+//SYSIN    DD  DUMMY                                                            
+//SYSOUT   DD  SYSOUT=*                                                         
+//SYSPRINT DD  SYSOUT=*                                                         
+//                                                                              
+//                                                                              
+//                                                                              
+//**********************************************************************        
+//* COPY FILE                                                          *        
+//**********************************************************************        
+//*S030   EXEC PGM=IEBGENER                                                     
+//*******  TO THIS FILE...                                                      
+//*YSUT2   DD  SYSOUT=*                                                         
+//*            DISP=OLD                                                         
+//*YSUT2   DD  DSN=SAMP.DATA.AWRDUPS(+0),                                       
+//*            DISP=MOD                                                         
+//*            DISP=OLD                                                         
+//*            DISP=(NEW,CATLG,DELETE),                                         
+//*            SPACE=(TRK,(10,10),RLSE),                                        
+//*            UNIT=PROD,                                                       
+//*            DCB=(LRECL=700,BLKSIZE=0,RECFM=FB)                               
+//****** FROM THIS FILE...                                                      
+//SYSUT1   DD  DSN=&&DATAREC,                                                   
+//             UNIT=TEMP,                                                       
+//             DISP=(OLD,PASS)                                                  
+//SYSIN    DD  DUMMY                                                            
+//SYSOUT   DD  SYSOUT=*                                                         
+//SYSPRINT DD  SYSOUT=*                                                         
+//*                                                                             

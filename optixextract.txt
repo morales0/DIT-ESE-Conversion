@@ -1,0 +1,110 @@
+//FIN0295D JOB (110090),'FIN AID (SAM)',                                        
+//             CLASS=F,                                                         
+//             MSGCLASS=N,                                                      
+//             MSGLEVEL=(1,1),                                                  
+//             USER=SAM$                                                        
+-INC $SAMLOAD                                                                  %
+//*                                                                             
+//**********************************************************************        
+//* CREATE A DATA FILE FROM  ORACLE SQL USING SQLPLUS.                 *        
+//* THE COMPLICATED SETUP IS BECAUSE THE SET ECHO OFF CAN NOT          *        
+//* BE ENTERED FROM SYSIN                                              *        
+//* 215023125 20030708 2003 02P1040    20030708 055903 SFAFILE4        *        
+//* 013005779 20030708 2003 CITIZEN    20030709 024359 FIN#####        *        
+//**********************************************************************        
+//*----------------------------------------------------------------*            
+//*  JOB DESCRIPTION: DEVELOPMENT SQLPLUS                          *            
+//*----------------------------------------------------------------*            
+//*                                                                             
+//*TEP100  EXEC ORASQLD2,PARM='++//DD:LOGON'                                    
+//STEP100  EXEC ORASQLP2,PARM='++//DD:LOGON'                                    
+//SQLRUN   DD *                                                                 
+START //DD:SQLENV                                                               
+SPOOL //DD:SPOOLED                                                              
+START //DD:SQLQRY                                                               
+SPOOL OFF                                                                       
+//SQLENV   DD *                                                                 
+WHENEVER SQLERROR EXIT SQL.SQLCODE                                              
+SET ECHO OFF                                                                    
+SET TERMOUT OFF                                                                 
+SET FEEDBACK OFF                                                                
+SET WRAP OFF                                                                    
+SET PAGESIZE 0                                                                  
+SET LINESIZE 80                                                                 
+SET HEADING OFF                                                                 
+//SQLQRY   DD *                                                                 
+LOCK TABLE SFA.SFA_FORMS IN EXCLUSIVE MODE NOWAIT;                              
+                                                                                
+COLUMN C1 FORMAT A9                                                             
+COLUMN C2 FORMAT A10                                                            
+                                                                                
+SELECT SUBSTR(F.U_ID,1,9) C1,                                                   
+       TO_CHAR(F.INSRT_DT,'YYYYMMDD'),                                          
+       F.AIDYR,                                                                 
+       UPPER(RPAD( NVL(F.FORM,' SQLNUL'), 10)) C2,                              
+       TO_CHAR(SYSDATE,'YYYYMMDD'),                                             
+       TO_CHAR(SYSDATE,'HHMISS'),                                               
+       'FIN0295X       ',                                                       
+       F.AIDID                                                                  
+FROM SFA.SFA_FORMS F                                                            
+WHERE F.SAM_POSTED IS NULL                                                      
+  AND F.POSTED = 'Y';                                                           
+                                                                                
+UPDATE SFA.SFA_FORMS F                                                          
+SET F.SAM_POSTED  = 'Y',                                                        
+    F.SAM_POST_DT = SYSDATE                                                     
+WHERE F.SAM_POSTED IS NULL                                                      
+  AND F.POSTED = 'Y';                                                           
+                                                                                
+COMMIT;                                                                         
+//SQLLOGIN DD DUMMY                                                             
+//SPOOLED  DD DSN=&&DATAREC,                                                    
+//            UNIT=TEMP,                                                        
+//            DCB=(LRECL=80,BLKSIZE=0,RECFM=FB),                                
+//            SPACE=(TRK,(10,10),RLSE),                                         
+//            DISP=(NEW,PASS,DELETE)                                            
+//LOGON    DD *                                                                 
+-INC $SFA$ORA                                                                  %
+/*                                                                              
+//SYSIN    DD *                                                                 
+START //DD:SQLRUN                                                               
+EXIT                                                                            
+/*                                                                              
+//*                                                                             
+//**********************************************************************        
+//* APPEND FILE TO SAMP.DATA.DOCDET(+0)                                *        
+//**********************************************************************        
+//JS020   EXEC PGM=IEBGENER                                                     
+//*******  TO THIS FILE...                                                      
+//SYSUT2   DD  DSN=SAMP.DATA.DOCDET(+0),                                        
+//             DISP=MOD                                                         
+//*            DISP=(NEW,CATLG,DELETE),                                         
+//*            SPACE=(TRK,(10,10),RLSE),                                        
+//*            UNIT=PROD,                                                       
+//*            DCB=(LRECL=80,BLKSIZE=7520,RECFM=FB)                             
+//****** FROM THIS FILE...                                                      
+//SYSUT1   DD  DSN=&&DATAREC,                                                   
+//             UNIT=TEMP,                                                       
+//             DISP=(OLD,PASS)                                                  
+//SYSIN    DD  DUMMY                                                            
+//SYSOUT   DD  SYSOUT=*                                                         
+//SYSPRINT DD  SYSOUT=*                                                         
+//*                                                                             
+//**********************************************************************        
+//* COPY FILE SAMP.DATA.DOCDET(+0) TO SAMP.DATA.DOCDET.PROSAM(+0)      *        
+//**********************************************************************        
+//JS030   EXEC PGM=IEBGENER                                                     
+//*******  TO THIS FILE...                                                      
+//SYSUT2   DD  DSN=SAMP.DATA.DOCDET.PROSAM(+0),                                 
+//             DISP=MOD                                                         
+//*            DISP=(NEW,CATLG,DELETE),                                         
+//*            SPACE=(TRK,(10,10),RLSE),                                        
+//*            UNIT=PROD,                                                       
+//*            DCB=(LRECL=80,BLKSIZE=7520,RECFM=FB)                             
+//****** FROM THIS FILE...                                                      
+//SYSUT1   DD  DSN=SAMP.DATA.DOCDET(+0),                                        
+//             DISP=OLD                                                         
+//SYSIN    DD  DUMMY                                                            
+//SYSOUT   DD  SYSOUT=*                                                         
+//SYSPRINT DD  SYSOUT=*                                                         
+//                                                                              

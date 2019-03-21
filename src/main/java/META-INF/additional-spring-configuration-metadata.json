@@ -1,0 +1,7 @@
+{"properties": [
+  {
+    "name": "oracle",
+    "type": "edu.umd.Config",
+    "description": "Oracle Datasource bean class"
+  }
+]}

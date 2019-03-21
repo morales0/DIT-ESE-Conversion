@@ -1,0 +1,11 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - JDBCApplication",
+            "request": "launch",
+            "mainClass": "edu.umd.springjdbcdit.JDBCApplication",
+            "projectName": "springjdbc-dit"
+        }
+    ]
+}
